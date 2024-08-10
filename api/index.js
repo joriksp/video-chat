@@ -1,19 +1,22 @@
 const express = require("express");
-const app = express();
-const server = require("http").Server(app);
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const { ExpressPeerServer } = require("peer");
 const { v4: uuidv4 } = require("uuid");
-app.set("view engine", "ejs");
-const io = require("socket.io")(server, {
+
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
    cors: {
       origin: "*",
    },
 });
-const { ExpressPeerServer } = require("peer");
-const opinions = {
+
+const options = {
    debug: true,
 };
 
-app.use("/peerjs", ExpressPeerServer(server, opinions));
+app.use("/peerjs", ExpressPeerServer(server, options));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
@@ -30,14 +33,21 @@ io.on("connection", (socket) => {
       setTimeout(() => {
          socket.to(roomId).broadcast.emit("user-connected", userId);
       }, 1000);
+
       socket.on("message", (message) => {
          io.to(roomId).emit("createMessage", message, userName);
       });
    });
 });
 
-// Export as a Vercel function
+// Экспортируем функцию для Vercel
 module.exports = (req, res) => {
+   if (req.method === "GET") {
+      return app(req, res); // Обработка ваших GET-запросов
+   }
+
+   // Слушаем WebSocket соединения
+   server.emit("request", req, res);
    return new Promise((resolve) => {
       server.listen(3000, () => {
          console.log("Server is running on port 3000");
