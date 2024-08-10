@@ -1,22 +1,20 @@
 const express = require("express");
-const { createServer } = require("http");
-const { Server } = require("socket.io");
-const { ExpressPeerServer } = require("peer");
-const { v4: uuidv4 } = require("uuid");
-
 const app = express();
-const server = createServer(app);
-const io = new Server(server, {
+const server = require("http").Server(app);
+const { v4: uuidv4 } = require("uuid");
+app.set("view engine", "ejs");
+const io = require("socket.io")(server, {
    cors: {
       origin: "*",
    },
 });
 
-const options = {
+const { ExpressPeerServer } = require("peer");
+const opinions = {
    debug: true,
 };
 
-app.use("/peerjs", ExpressPeerServer(server, options));
+app.use("/peerjs", ExpressPeerServer(server, opinions));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
@@ -33,13 +31,10 @@ io.on("connection", (socket) => {
       setTimeout(() => {
          socket.to(roomId).broadcast.emit("user-connected", userId);
       }, 1000);
-
       socket.on("message", (message) => {
          io.to(roomId).emit("createMessage", message, userName);
       });
    });
 });
 
-server.listen(3000, () => {
-   console.log("Server is running on port 3000");
-});
+server.listen(process.env.PORT || 3030);
