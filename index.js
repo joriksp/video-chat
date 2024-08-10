@@ -40,18 +40,6 @@ io.on("connection", (socket) => {
    });
 });
 
-// Экспортируем функцию для Vercel
-module.exports = (req, res) => {
-   if (req.method === "GET") {
-      return app(req, res); // Обработка ваших GET-запросов
-   }
-
-   // Слушаем WebSocket соединения
-   server.emit("request", req, res);
-   return new Promise((resolve) => {
-      server.listen(3000, () => {
-         console.log("Server is running on port 3000");
-         resolve();
-      });
-   });
-};
+server.listen(3000, () => {
+   console.log("Server is running on port 3000");
+});
